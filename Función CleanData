@@ -1,0 +1,60 @@
+def clean(df,columnas_continuas,columnas_categoricas, columna_colonia,limites):
+   
+    #df = df[list.union(list(columnas_continuas), list(columnas_categoricas),list(columna_colonia))]
+    columnas=columnas_continuas+columnas_categoricas+columna_colonia
+    df = df[columnas]
+    
+    df[columnas_continuas[5]] = df[columnas_continuas[5]].str.replace(',', '')
+    df[columnas_continuas[5]] = df[columnas_continuas[5]].str.replace('$', '')
+    df[columnas_continuas[0]] = df[columnas_continuas[0]].str.replace(',', '')
+    df[columnas_categoricas[0]] = df[columnas_categoricas[0]].str.replace('Interior', '1')
+    df[columnas_categoricas[0]] = df[columnas_categoricas[0]].str.replace('interior', '1')
+    df[columnas_categoricas[0]] = df[columnas_categoricas[0]].str.replace('Exterior', '2')
+    df[columnas_categoricas[0]] = df[columnas_categoricas[0]].fillna(3)    
+    df[columna_colonia[0]]=df[columna_colonia[0]].str.lower()
+    df["Colonia2"] = df[columna_colonia[0]].astype('category')
+    df["Colonia2"] = df["Colonia2"].cat.codes
+    
+    
+    for j in columnas_categoricas:
+        df[j] = df[j].str.replace('No', '2')
+        df[j] = df[j].str.replace('no', '2')
+        df[j] = df[j].str.replace('S�', '1')
+        df[j] = df[j].fillna(3)
+
+    df = df.replace(np.nan, 0, regex=True)
+    
+    for i in columnas_continuas:
+        df[i] = pd.to_numeric(df[i],errors='coerce') 
+        df[i] = df[i].astype(np.int64)
+    
+    df["Precio/m2"]=df[columnas_continuas[5]]/df[columnas_continuas[0]]
+    
+    df = df[ ((df[columnas_continuas[1]] < limites.get("Antiguedad")))
+                 & ( df[columnas_continuas[2]] < limites.get("Est") ) 
+                 & ((df[columnas_continuas[3]]>0) | (df[columnas_continuas[3]] <limites.get("Rec")))
+                 & (df[columnas_continuas[6]] <limites.get("Ba�")) 
+                 & ((df[columnas_continuas[4]] < limites.get("Costo Mantenimiento"))) 
+                 & (df[columnas_continuas[0]]< limites.get("m2")) 
+                 & ((df[columnas_continuas[5]]< limites.get("PrecioSup"))) & (df[columnas_continuas[5]]>limites.get("PrecioInf"))].reset_index()
+    
+    return df
+    
+    
+%cd
+#Cargar los datos
+datalimpio =  pd.read_csv("Documents\Calculadora_Valuación_V3_DatosLimpios.csv")
+
+#Definir variables continuas
+var_cont = ['m2', 'Antig�edad','Est', 'Rec', 'Costo Mantenimiento', 'Precio de venta', 'Ba�' ]
+
+#Definir variables categoricas
+var_disc = ['Interior \nExteriror','Elev', 'Balc�n', 'Amenidades', 'Bodega', 'Cuarto de servicio', 'Jaula de tendido', 'Seguridad']
+
+#Definir la variable colonia
+var_col=['Colonia']
+
+#Definir limites para filtrar
+limites={"Antiguedad":40,"Est":4,"Rec":5,"Ba�":4,"Costo Mantenimiento":4000,"m2":185,"PrecioInf":1000000,"PrecioSup":4000000}
+
+x=clean(datalimpio,var_cont,var_disc,var_col,limites)
