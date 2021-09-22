@@ -1,0 +1,56 @@
+import re
+import numpy as np
+import pandas as pd 
+from fuzzywuzzy import fuzz
+
+Colonias = ['Acacias','Actipán','Álamos','Albert','Amp. Nápoles','Américas Unidas','Atenor Salas','Ciudad de los Deportes','Crédito Constructor','Del Carmen','Del Lago','Del Valle Centro',
+                 'Del Valle Norte','Del Valle Sur','Ermita','Extremadura Insurgentes','General Pedro María Anaya','Independencia','Insurgentes Mixcoac',
+                 'Insurgentes San Borja','Iztaccíhuatl','Josefa Ortiz de Domínguez','Letrán Valle','Merced Gómez','Miguel Alemán','Miravalle','Mixcoac',
+                 'Moderna','Narvarte Oriente','Narvarte Poniente','Nativitas','Niños Héroes','Noche Buena','Nápoles','Periodista','Piedad Narvarte','Portales Norte',
+                 'Portales Oriente','Portales Sur','Postal','Residencial Emperadores','San José Insurgentes','San Juan','San Pedro de los Pinos','San Simón Ticumac',
+                 'Santa Cruz Atoyac','Santa María Nonoalco','Tlacoquemécatl','Villa de Cortés',
+                 'Vértiz Narvarte','Xoco','Zacahuitzco','8 de Agosto','Algarín','Amp Asturias','Asturias','Atlampa','Buenavista','Buenos Aires',
+                 'Centro – Centro Histórico','Centro – Zona Norte','Centro – Zona Oriente','Centro – Zona Poniente','Centro – Zona Sur','Condesa','Cuauhtémoc','Doctores',
+                 'Esperanza','Ex Hipódromo de Peralvillo','Felipe Pescador','Guerrero','Hipódromo','Hipódromo Condesa','Juárez – Zona Rosa','Juárez – Zona Centro','Juárez – Zona Poniente',
+                 'Maza','Morelos','Nonoalco Tlatelolco','Nonoalco Tlatelolco – Zona Oriente','Nonoalco Tlatelolco – Zona Poniente','Obrera','Paulino Navarro','Peralvillo','Roma Norte',
+                 'Roma Sur','San Rafael','San Simón Tolnahuac','Santa María Insurgentes','Santa María La Ribera',
+                 'Tabacalera','Tránsito','Valle Gómez','Vista Alegre','5 de Mayo','10 de Abril','16 de Septiembre','Ahuehuetes Anáhuac','Agricultura',
+                  'Amp. Daniel Garza','Amp. Granada','Amp. Popo','Amp. Torre Blanca','América','Anzures','Anáhuac I Secc','Anáhuac II Secc','Argentina Antigua','Argentina Poniente',
+                  'Bosques de Las Lomas','Cuauhtémoc Pensil','Daniel Garza','Deportivo Pensil','Dos Lagos','Escandón I Secc','Escandón II Secc','Francisco I. Madero','Granada','Hipódromo de las Américas',
+                  'Huichapán','Ignacio Manuel Altamirano','Irrigación','Lago Norte','Lago Sur','Legaria','Loma Hermosa','Lomas Altas','Lomas de Bezares','Lomas de Chapultepec I Secc',
+                  'Lomas de Chapultepec II Secc','Lomas de Chapultepec III Secc','Lomas de Chapultepec IV Secc','Lomas de Chapultepec V Secc','Lomas de Chapultepec VI Secc','Lomas de Chapultepec VII Secc',
+                  'Lomas de Chapultepec VIII Secc','Lomas de Reforma','Lomas de San Isidro','Lomas de Sotelo','Los Manzanos','Mariano Escobedo','Modelo Pensil','Molino del Rey','México Nuevo','Nextitla',
+                  'Observatorio','Pensil Norte','Pensil Sur','Peralitos','Periodista','Plutarco Elías Calles', 'Polanco I Secc','Polanco II Secc','Polanco III Secc','Polanco IV Secc','Polanco V Secc',
+                  'Popo','Popotla','Real de Las Lomas','Refinería 18 de Marzo','Reforma Pensil','Reforma Social','Residencia Militar','San Diego Ocoyoacac','San Joaquín','San Juanico','San Lorenzo Tlatenango',
+                  'San Miguel Chapultepec I Secc','San Miguel Chapultepec II Secc','Santo Tomás','Tacuba','Tacubaya','Tlaxpana','Torre Blanca','Un Hogar Para Nosotros','Ventura Pérez de Alba','Verónica Anzures']
+
+def NColonia(long_name):
+    colonia=[]
+    col=[]
+    best_score = 0
+    porc=np.zeros(len(Colonias))
+    
+    col=long_name
+    
+    for i in range(0,len(Colonias)):
+        porc[i]= fuzz.token_sort_ratio(col,Colonias[i])
+    
+    if np.max(porc) > best_score:
+        best_score = np.max(porc)
+    
+    for i in Colonias:
+        dicc[i]= fuzz.token_sort_ratio(col,i)
+
+    list_of_key = list(dicc.keys())
+    list_of_value = list(dicc.values())
+ 
+    position = list_of_value.index(best_score)
+    if best_score>=94:
+        print(list_of_key[position])
+    else:
+        print("Sin coincidencias")
+
+
+                  
+x=NColonia('janitzio')
+x
