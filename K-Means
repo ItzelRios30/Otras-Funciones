@@ -1,0 +1,137 @@
+## importar librerias
+from sklearn.decomposition import PCA
+from sklearn.model_selection import cross_val_score
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn import metrics
+from sklearn.preprocessing import OneHotEncoder
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn.cluster import KMeans
+
+
+## Cargar base de datos
+%cd
+datalimpio =  pd.read_csv("Documents\Calculadora_Valuación_V3_DatosLimpios.csv")
+
+## Limpiar base de datos
+
+datalimpio['Colonia'] = datalimpio['Colonia'].str.lower()      #transformar a minusculas 
+Col_num = {'m2', 'Antig�edad','Est', 'Rec', 'Costo Mantenimiento', 'Precio de venta', 'Ba�'}
+Col_cat = {'Interior \nExteriror','Elev', 'Balc�n', 'Amenidades', 'Bodega', 'Cuarto de servicio', 'Jaula de tendido', 'Seguridad'}
+Col_col = {'Colonia'}
+datos = datalimpio[set.union(Col_num , Col_cat, Col_col)]
+
+#Eliminar comas y signo de pesos
+datos['Precio de venta'] = datos['Precio de venta'].str.replace(',', '')
+datos['Precio de venta'] = datos['Precio de venta'].str.replace('$', '')
+datos['m2'] = datos['m2'].str.replace(',', '')
+
+## Para las variables númericas sustituir los valores nulos con 0 y transformar a int64
+for i in Col_num:
+    datos[i] = pd.to_numeric(datos[i],errors='coerce') 
+    datos = datos.replace(np.nan, 0, regex=True)
+    datos[i] = datos[i].astype(np.int64)
+    
+## Pära las variables categoricas transformar de {Sí, No, Nolose} a {1, 2, 3}
+
+for i in Col_cat:
+    datos[i] = datos[i].str.replace('No', '2')
+    datos[i] = datos[i].str.replace('no', '2')
+    datos[i] = datos[i].str.replace('S�', '1')
+    datos[i] = datos[i].fillna(3) #NO lo se
+    
+#transformar variables {exterior, interior, final} a {1,2, 3}
+datos['Interior \nExteriror'] = datos['Interior \nExteriror'].str.replace('Interior', '1')
+datos['Interior \nExteriror'] = datos['Interior \nExteriror'].str.replace('interior', '1')
+datos['Interior \nExteriror'] = datos['Interior \nExteriror'].str.replace('Exterior', '2')
+datos['Interior \nExteriror'] = datos['Interior \nExteriror'].fillna(3)
+
+#Filtrar Datos
+datos_fil = datos[((datos['Antig�edad'] < 40))
+                 & ( datos['Est'] < 4 ) 
+                 & ((datos['Rec']>0) & (datos['Rec'] < 5))
+                 & (datos['Ba�'] <4) 
+                 & ((datos['Costo Mantenimiento'] < 4000) ) 
+                 & (datos['m2']< 185) 
+                 & (datos['Precio de venta']< 0.4e+07) & (datos['Precio de venta'] > 1e+06)].reset_index()
+
+
+#Escalar variables para
+scaler = StandardScaler()
+dataescal = scaler.fit_transform(datos_fil[{'Colonia','Rec', 'Ba�', 'Precio de venta', 'Antig�edad', 
+                                           'm2', 'Costo Mantenimiento', 'Est'}])
+
+
+## Analisis por Componentes Principales
+pca_2 = PCA(n_components =3)
+pca_2_resul = pca_2.fit_transform(dataescal)
+print('Varianza explicada por componente princial: {}'.format(pca_2.explained_variance_ratio_))
+print('Varianza acumulada explicada por 3 componentes princiales:{:.2%}'.format(np.sum(pca_2.explained_variance_ratio_)))
+
+#Gráficar PCA resultados
+%matplotlib notebook
+sns.set(style = "darkgrid")
+fig = plt.figure(figsize = (14, 7))
+ax = fig.add_subplot( projection = '3d')
+
+ax.set_xlabel("Componente 1")
+ax.set_ylabel("Componente 2")
+ax.set_zlabel("Componente 3 ")
+
+ax.scatter(pca_2_resul[:,0], pca_2_resul[:,1], 
+           pca_2_resul[:,2], label = 'Clase 1', color = "green")
+
+plt.show()
+
+##Evalua el número de clusters con Distortion Score Elbow
+sse = []
+for k in range(1, 11):
+    kmeans = KMeans(n_clusters=k)
+    kmeans.fit(dataescal)
+    sse.append(kmeans.inertia_)
+#Graficar
+fig = plt.figure(figsize = (14, 7))
+plt.style.use("fivethirtyeight")
+plt.plot(range(1, 11), sse)
+plt.xticks(range(1, 11))
+plt.xlabel("Numero de clusters")
+plt.ylabel("SSE")
+plt.show()
+
+
+## Realizar el modelo con el mejor número de clustesrs
+model_kmeans = KMeans(n_clusters=5)
+# fit the model
+model_kmeans.fit(dataescal)
+# assign a cluster to each example
+yhat = model_kmeans.predict(dataescal)
+# retrieve unique clusters
+clusters_kmeans = np.unique(yhat)
+
+
+##Graficar los inmuebles por clustesr
+%matplotlib notebook
+sns.set(style = "darkgrid")
+fig = plt.figure(figsize = (14, 7))
+ax = fig.add_subplot( projection = '3d')
+
+ax.set_xlabel("Componente 1")
+ax.set_ylabel("Componente 2")
+ax.set_zlabel("Componente 3 ")
+
+ax.scatter(pca_2_resul[model_kmeans.labels_==0][:,0], pca_2_resul[model_kmeans.labels_==0][:,1], 
+           pca_2_resul[model_kmeans.labels_==0][:,2], label = 'Clase 1', color = "green")
+ax.scatter(pca_2_resul[model_kmeans.labels_==1][:,0], pca_2_resul[model_kmeans.labels_==1][:,1], 
+           pca_2_resul[model_kmeans.labels_==1][:,2], label = 'Clase 2', color = "black")
+ax.scatter(pca_2_resul[model_kmeans.labels_==2][:,0], pca_2_resul[model_kmeans.labels_==2][:,1], 
+           pca_2_resul[model_kmeans.labels_==2][:,2], label = 'Clase 3', color = "red")
+ax.scatter(pca_2_resul[model_kmeans.labels_==3][:,0], pca_2_resul[model_kmeans.labels_==3][:,1], 
+           pca_2_resul[model_kmeans.labels_==3][:,2], label = 'Clase 4', color = "blue")
+ax.scatter(pca_2_resul[model_kmeans.labels_==4][:,0], pca_2_resul[model_kmeans.labels_==4][:,1], 
+           pca_2_resul[model_kmeans.labels_==4][:,2], label = 'Clase 5', color = "yellow")
+plt.legend()
+plt.show()
