@@ -1,6 +1,8 @@
+import numpy as np
+import pandas as pd 
+
 def clean(df,columnas_continuas,columnas_categoricas, columna_colonia,limites):
    
-    #df = df[list.union(list(columnas_continuas), list(columnas_categoricas),list(columna_colonia))]
     columnas=columnas_continuas+columnas_categoricas+columna_colonia
     df = df[columnas]
     
@@ -57,4 +59,5 @@ var_col=['Colonia']
 #Definir limites para filtrar
 limites={"Antiguedad":40,"Est":4,"Rec":5,"Ba�":4,"Costo Mantenimiento":4000,"m2":185,"PrecioInf":1000000,"PrecioSup":4000000}
 
-x=clean(datalimpio,var_cont,var_disc,var_col,limites)
+data=clean(datalimpio,var_cont,var_disc,var_col,limites)
+
